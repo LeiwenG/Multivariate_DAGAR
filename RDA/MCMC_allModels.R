@@ -230,7 +230,7 @@ for(i in 1:(n-2)){
 }
 index1 = unlist(index)
 
-# Implement models for all permutations
+# Implement MDAGAR for all permutations
 
 q=4
 rate_list = list(rate_lung1, rate_esophagus1, rate_larynx1, rate_colrect1)
