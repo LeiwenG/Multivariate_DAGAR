@@ -241,7 +241,6 @@ models = permutations(n=4,r=4,v=orderindex,repeats.allowed=F)
 mcmc_list = list()
 for(i in 1:24){
   print(i)
-  i=1
 
   rate_list1 = rate_list[models[i,]]
   
