@@ -30,18 +30,18 @@ library(mcmcse)
 library(LaplacesDemon)
 library(gtools)
 library(ggmap)
-setwd("/Users/Leiwen/Box Sync/Research/data_new")
+setwd("/Users/Leiwen/Dropbox/Github/Multivariate_DAGAR/RDA")
 
 #Import covariates
-covariates <- read.csv("~/Box Sync/Research/data/seer/covariates.csv")
-race <- read.csv("~/Box Sync/Research/data/seer/race.csv")
-sex <- read.csv("~/Box Sync/Research/data/seer/sex.csv")
-insurance <- read.csv("~/Box Sync/Research/data/seer/insurance.csv")
+covariates <- read.csv("covariates.csv")
+race <- read.csv("race.csv")
+sex <- read.csv("sex.csv")
+insurance <- read.csv("insurance.csv")
 smoking <- read.csv("smoking.csv")
 smoking$smoking <- as.numeric(substr(smoking$Cigarette.Smoking.Rate., 1,4))
 
 #Import age-adjusted incidence rates for 4 cancers in California
-rate_5y <- read.csv("~/Box Sync/Research/data/seer/age_adjusted.csv")
+rate_5y <- read.csv("age_adjusted.csv")
 rate_CA = rate_5y[substr(rate_5y$State_county,1,2) == "CA",]
 
 rate_lung = rate_CA[rate_CA$Site_recode_ICD_O_3_WHO_2008=="Lung and Bronchus",]
@@ -89,7 +89,7 @@ color.code.rate_esophagus = findColours(class.rate_esophagus, color.pallete)
 color.code.rate_larynx = findColours(class.rate_larynx, color.pallete)
 color.code.rate_colrect = findColours(class.rate_colrect, color.pallete)
 
-pdf("/Users/Leiwen/Box Sync/Research/data_new/incidence_rate_5y_new.pdf", height = 10, width = 10)
+pdf("incidence_rate_5y_new.pdf", height = 10, width = 10)
 par(mfrow=c(2,2), oma = c(0,0,4,0) + 0.1, mar = c(0,0,1,0) + 0.1)
 
 plot(ca.poly, col = color.code.rate_lung)
@@ -155,7 +155,7 @@ class.smoke = classIntervals(var=ca.poly$smoke, n=4, style="fixed",
                              fixedBreaks=brks_fit_smoke, dataPrecision=4)
 color.code.smoke = findColours(class.smoke, color.pallete)
 
-pdf("/Users/Leiwen/Box Sync/Research/data_new/covariates.pdf", height = 6, width = 10)
+pdf("covariates.pdf", height = 6, width = 10)
 par(mfrow=c(1,2), oma = c(0,0,4,0) + 0.1, mar = c(0,0,1,0) + 0.1)
 plot(ca.poly, col = color.code.smoke)
 leg.txt = c("6.70 - 11.50", "11.50 - 13.85", "13.85 - 16.28", "16.28 - 25.50") 
@@ -421,4 +421,4 @@ for(i in 1:24){
 }
 
 # Save MCMC outputs of all permutations for model selection
-saveRDS(mcmc_list, "/Users/Leiwen/Box Sync/Research/data_new/mcmc_list_new.rds")
+saveRDS(mcmc_list, "mcmc_list_new.rds")
