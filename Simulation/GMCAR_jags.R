@@ -353,45 +353,45 @@ for(seed in 1:100){
 }
 
 modelgraph = "usa"
-num = 1
+saveRDS(bhat, paste("bhat_", modelgraph, ".rds", sep=""))
+saveRDS(blower, paste("blower_", modelgraph, ".rds", sep=""))
+saveRDS(bupper, paste("bupper_", modelgraph, ".rds", sep=""))
 
-saveRDS(bhat, paste("bhat_", modelgraph, num, ".rds", sep=""))
-saveRDS(blower, paste("blower_", modelgraph, num, ".rds", sep=""))
-saveRDS(bupper, paste("bupper_", modelgraph, num, ".rds", sep=""))
+saveRDS(varehat, paste("varehat_", modelgraph, ".rds", sep=""))
+saveRDS(varelower, paste("varelower_", modelgraph, ".rds", sep=""))
+saveRDS(vareupper, paste("vareupper_", modelgraph, ".rds", sep=""))
 
-saveRDS(varehat, paste("varehat_", modelgraph, num, ".rds", sep=""))
-saveRDS(varelower, paste("varelower_", modelgraph, num, ".rds", sep=""))
-saveRDS(vareupper, paste("vareupper_", modelgraph, num, ".rds", sep=""))
+saveRDS(tauwhat, paste("tauwhat_", modelgraph, ".rds", sep=""))
+saveRDS(tauwlower, paste("tauwlower_", modelgraph, ".rds", sep=""))
+saveRDS(tauwupper, paste("tauwupper_", modelgraph, ".rds", sep=""))
 
-saveRDS(tauwhat, paste("tauwhat_", modelgraph, num, ".rds", sep=""))
-saveRDS(tauwlower, paste("tauwlower_", modelgraph, num, ".rds", sep=""))
-saveRDS(tauwupper, paste("tauwupper_", modelgraph, num, ".rds", sep=""))
+saveRDS(rhohat, paste("rhohat_", modelgraph, ".rds", sep=""))
+saveRDS(rholower, paste("rholower_", modelgraph, ".rds", sep=""))
+saveRDS(rhoupper, paste("rhoupper_", modelgraph, ".rds", sep=""))
 
-saveRDS(rhohat, paste("rhohat_", modelgraph, num, ".rds", sep=""))
-saveRDS(rholower, paste("rholower_", modelgraph, num, ".rds", sep=""))
-saveRDS(rhoupper, paste("rhoupper_", modelgraph, num, ".rds", sep=""))
+saveRDS(etahat, paste("etahat_", modelgraph, ".rds", sep=""))
+saveRDS(etalower, paste("etalower_", modelgraph, ".rds", sep=""))
+saveRDS(etaupper, paste("etaupper_", modelgraph, ".rds", sep=""))
 
-saveRDS(etahat, paste("etahat_", modelgraph, num, ".rds", sep=""))
-saveRDS(etalower, paste("etalower_", modelgraph, num, ".rds", sep=""))
-saveRDS(etaupper, paste("etaupper_", modelgraph, num, ".rds", sep=""))
+saveRDS(w1hat, paste("w1hat_", modelgraph, ".rds", sep=""))
+saveRDS(w1lower, paste("w1lower_", modelgraph, ".rds", sep=""))
+saveRDS(w1upper, paste("w1upper_", modelgraph, ".rds", sep=""))
+saveRDS(w2hat, paste("w2hat_", modelgraph, ".rds", sep=""))
+saveRDS(w2lower, paste("w2lower_", modelgraph, ".rds", sep=""))
+saveRDS(w2upper, paste("w2upper_", modelgraph, ".rds", sep=""))
 
-saveRDS(w1hat, paste("w1hat_", modelgraph, num, ".rds", sep=""))
-saveRDS(w1lower, paste("w1lower_", modelgraph, num, ".rds", sep=""))
-saveRDS(w1upper, paste("w1upper_", modelgraph, num, ".rds", sep=""))
+saveRDS(W1_path, paste("W1_", modelgraph, ".rds", sep=""))
+saveRDS(W2_path, paste("W2_", modelgraph, ".rds", sep=""))
 
-saveRDS(W1_path, paste("W1_", modelgraph, num, ".rds", sep=""))
-saveRDS(W2_path, paste("W2_", modelgraph, num, ".rds", sep=""))
+saveRDS(corhat, paste("corhat_", modelgraph, ".rds", sep=""))
+saveRDS(corlower, paste("corlower_", modelgraph, ".rds", sep=""))
+saveRDS(corupper, paste("corupper_", modelgraph, ".rds", sep=""))
 
-saveRDS(corhat, paste("corhat_", modelgraph, num, ".rds", sep=""))
-saveRDS(corlower, paste("corlower_", modelgraph, num, ".rds", sep=""))
-saveRDS(corupper, paste("corupper_", modelgraph, num, ".rds", sep=""))
-
-saveRDS(Covhat, paste("Covhat_", modelgraph, num, ".rds", sep=""))
-saveRDS(Covlower, paste("Covlower_", modelgraph, num, ".rds", sep=""))
-saveRDS(Covupper, paste("Covupper_", modelgraph, num, ".rds", sep=""))
+saveRDS(Covhat, paste("Covhat_", modelgraph, ".rds", sep=""))
+saveRDS(Covlower, paste("Covlower_", modelgraph, ".rds", sep=""))
+saveRDS(Covupper, paste("Covupper_", modelgraph, ".rds", sep=""))
 
 saveRDS(cor_region, "cor_region.usa.rds")
 saveRDS(Cov_region, "Cov_region.usa.rds")
 
-saveRDS(WAIC, paste("WAIC_", modelgraph, num, ".rds", sep=""))
-
+saveRDS(WAIC, paste("WAIC_", modelgraph, ".rds", sep=""))
