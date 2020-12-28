@@ -1,28 +1,35 @@
-library(rjmcmc)
+setwd("Multivariate_DAGAR/RDA")
+#Import data for case 1
+source("data_generation_case1.R")
+
+library(bridgesampling)
 library(mnormt)
 
-setwd("/Users/Leiwen/Dropbox/Github/Multivariate_DAGAR/RDA")
-mcmc_list = readRDS("mcmc_list_new.rds")
+##################################################
 
-# Draw samples
-jags_result = list()
-draw_sample = NULL
+orderindex = c(1,2,3,4)
+models = permutations(n=4,r=4,v=orderindex,repeats.allowed=F)
+
+Ylist = list()
+Xlist = list()
+
 for(i in 1:24){
-  jags_result1 = mcmc_list[[i]]$BUGSoutput$sims.array[,1,c(233:285,518:529)]
-  jags_result2 = mcmc_list[[i]]$BUGSoutput$sims.array[,2,c(233:285,518:529)]
-  jags_result[[i]] = rbind(jags_result1, jags_result2)
-  draw_sample = cbind(draw_sample, jags_result[[i]])
-}
-
-draw = function(){draw_sample[sample(dim(draw_sample)[1], 1, replace=T),
-                              -which(colnames(draw_sample) == "deviance")]}
-
-
-gf = list()
-ginvf = list()
-for(i in 1:24){
-  gf[[i]] = function(psi){ psi }
-  ginvf[[i]] = function(theta){theta}
+  print(i)
+  
+  rate_list1 = rate_list[models[i,]]
+  
+  Y1 = rate_list1[[1]]$rate[final_perm]
+  Y2 = rate_list1[[2]]$rate[final_perm]
+  Y3 = rate_list1[[3]]$rate[final_perm]
+  Y4 = rate_list1[[4]]$rate[final_perm]
+  
+  X1 = as.matrix(cbind(1,rate_list1[[1]][,6:14]))[final_perm,]
+  X2 = as.matrix(cbind(1,rate_list1[[2]][,6:14]))[final_perm,]
+  X3 = as.matrix(cbind(1,rate_list1[[3]][,6:14]))[final_perm,]
+  X4 = as.matrix(cbind(1,rate_list1[[4]][,6:14]))[final_perm,]
+  
+  Ylist[[i]] = c(Y1,Y2,Y3,Y4)
+  Xlist[[i]] = as.matrix(bdiag(bdiag(X1, X2), bdiag(X3,X4)))
 }
 
 Dinv_new <- function(Rho, n, cn, ns, udnei,q){
@@ -43,120 +50,91 @@ Dinv_new <- function(Rho, n, cn, ns, udnei,q){
   return(invD)
 }
 
+### using jags output
+mcmc_list_jags = readRDS("mcmc_list_new2.rds")
 
-# Create data for 24 models
-Ylist = list()
-Xlist = list()
+### Functions used for bridge sampling
 
+#likelihood function
+Likli_fun = function(samples.row, data){
+  
+  A21_est = diag(samples.row["eta021"], data$n) + samples.row["eta121"] * data$Minc
+  A31_est = diag(samples.row["eta031"], data$n) + samples.row["eta131"] * data$Minc
+  A32_est = diag(samples.row["eta032"], data$n) + samples.row["eta132"] * data$Minc
+  A41_est = diag(samples.row["eta041"], data$n) + samples.row["eta141"] * data$Minc
+  A42_est = diag(samples.row["eta042"], data$n) + samples.row["eta142"] * data$Minc
+  A43_est = diag(samples.row["eta043"], data$n) + samples.row["eta143"] * data$Minc
+  
+  invD_est = Dinv_new(c(samples.row["rho1"],samples.row["rho2"],samples.row["rho3"],samples.row["rho4"]), data$n, data$cn, data$ns, data$udnei, q=4)
+  G_est = as.matrix(bdiag(bdiag(1/samples.row["tau1"]*solve(invD_est[[1]]), 1/samples.row["tau2"]*solve(invD_est[[2]])), 
+                          bdiag(1/samples.row["tau3"]*solve(invD_est[[3]]), 1/samples.row["tau4"]*solve(invD_est[[4]]))))
+  A_est = as.matrix(blockmatrix(names = c("0","A21","A31","A41","0","0","A32","A42","0","0","0","A43","0","0","0","0"), 
+                                A21=A21_est, A31=A31_est, A32=A32_est, A41=A41_est, A42=A42_est, A43=A43_est, dim=c(4,4)))
+  L_est = solve(diag(4*data$n)-A_est)
+  V_est = L_est%*%G_est%*%t(L_est)
+  Sigma = diag(c(rep(samples.row["vare1"],data$n),rep(samples.row["vare2"],data$n),rep(samples.row[["vare3"]],data$n),rep(samples.row[["vare4"]],data$n)))
+  Cov = V_est + Sigma
+  Prec = solve(nearPD(Cov)$mat)
+  beta = NULL
+  for(par in 1:40){
+    beta = c(beta, samples.row[paste("beta[", par, "]", sep="")])
+  }
+  mu = data$X%*%beta
+  as.numeric(-2*data$n*log(2*pi) + 1/2*logdet(nearPD(Prec)$mat) - 1/2*t(data$Y-mu)%*%Prec%*%(data$Y-mu))
+}
+
+#unnormalized joint posterior function
+log_posterior <- function(samples.row, data) {
+  
+  eta_sum = dnorm(samples.row["eta021"], 0, 10, log=T) + dnorm(samples.row["eta121"], 0, 10, log=T) +
+    dnorm(samples.row["eta031"], 0, 10, log=T) + dnorm(samples.row["eta131"], 0, 10, log=T) +
+    dnorm(samples.row["eta032"], 0, 10, log=T) + dnorm(samples.row["eta132"], 0, 10, log=T) +
+    dnorm(samples.row["eta041"], 0, 10, log=T) + dnorm(samples.row["eta141"], 0, 10, log=T) +
+    dnorm(samples.row["eta042"], 0, 10, log=T) + dnorm(samples.row["eta142"], 0, 10, log=T) +
+    dnorm(samples.row["eta043"], 0, 10, log=T) + dnorm(samples.row["eta143"], 0, 10, log=T) 
+  
+  
+  rho_sum = dunif(samples.row["rho1"], 0, 0.999, log=T) + dunif(samples.row["rho2"], 0, 0.999, log=T) +
+    dunif(samples.row["rho3"], 0, 0.999, log=T) + dunif(samples.row["rho4"], 0, 0.999, log=T)
+  
+  tau_sum = dgamma(samples.row["tau1"], 2, rate = 0.1, log=T) + dgamma(samples.row["tau2"], 2, rate = 0.1, log=T) + 
+    dgamma(samples.row["tau3"], 2, rate = 0.1, log=T) + dgamma(samples.row["tau4"], 2, rate = 0.1, log=T)
+  
+  sigma_sum = dinvgamma(samples.row["vare1"], 2, 1, log=T) + dinvgamma(samples.row["vare2"], 2, 1, log=T) +
+    dinvgamma(samples.row["vare3"], 2, 1, log=T) + dinvgamma(samples.row["vare4"], 2, 1, log=T)
+  
+  beta = NULL
+  for(par in 1:40){
+    beta = c(beta, samples.row[paste("beta[", par, "]", sep="")])
+  }
+  beta_sum = dmnorm(beta, 0, diag(sqrt(1000),40), log=T)
+  as.numeric(Likli_fun(samples.row, data) + eta_sum + rho_sum + tau_sum + sigma_sum + beta_sum)
+}
+
+#upper and lower bound for parameters
+cname <- colnames(mcmc_list_jags[[1]]$BUGSoutput$sims.array[,1,c(1:40, 42:65)])
+lb <- rep(-Inf, length(cname))
+ub <- rep(Inf, length(cname))
+names(lb) <- names(ub) <- cname
+lb[53:64] <- 0
+ub[53:56] <- 0.999
+
+#bridge sampling for log marginal likelihood
+model.bridge = list()
+for(model in 1:24){
+  print(model)
+  set.seed(12345)
+  model.bridge[[model]] <- bridge_sampler(samples = mcmc_list_jags[[model]], 
+                                          data = list(Y = Ylist[[model]], X = Xlist[[model]], Minc = Minc, n = n, ns = dni, cn = c(0, cni), udnei = udnei),
+                                          log_posterior = log_posterior, lb = lb,
+                                          ub = ub, maxiter = 100000, silent = FALSE)
+  
+}
+logml = rep(0, 24)
 for(i in 1:24){
-  print(i)
-  rate_list1 = rate_list[models[i,]]
-  
-  Y1 = rate_list1[[1]]$rate[final_perm]
-  Y2 = rate_list1[[2]]$rate[final_perm]
-  Y3 = rate_list1[[3]]$rate[final_perm]
-  Y4 = rate_list1[[4]]$rate[final_perm]
-  
-  X1 = as.matrix(cbind(1,rate_list1[[1]][,6:14]))[final_perm,]
-  X2 = as.matrix(cbind(1,rate_list1[[2]][,6:14]))[final_perm,]
-  X3 = as.matrix(cbind(1,rate_list1[[3]][,6:14]))[final_perm,]
-  X4 = as.matrix(cbind(1,rate_list1[[4]][,6:14]))[final_perm,]
-  
-  Ylist[[i]] = c(Y1,Y2,Y3,Y4)
-  Xlist[[i]] = as.matrix(bdiag(bdiag(X1, X2), bdiag(X3,X4)))
+  logml[i] = model.bridge[[i]]$logml
 }
-
-
-# Case 2: load prior and likelihood
-load("p_prior_new.RData")
-load("likelihood_new.RData")
-
-# For case 1, load("p_prior.RData"), load("likelihood.RData")
-
-
-#Compare with model 1
-goals_post = list()
-ch_ind = NULL
-for(i in 2:24){
-  print(i)
-  goals_post[[i]] = rjmcmcpost(post.draw = list(draw,draw), 
-                               g = list(gf[[1]],gf[[i]]),
-                               ginv =list(ginvf[[1]],ginvf[[i]]), 
-                               likelihood = list(L[[1]],L[[i]]),
-                               param.prior = list(p.prior[[1]],p.prior[[i]]),
-                               model.prior = rep(1/2,2), 
-                               chainlength = 2000)
-  if(which(goals_post[[i]]$result$`Posterior Model Probabilities` == max(goals_post[[i]]$result$`Posterior Model Probabilities`)) == 2){
-    ch_ind = c(ch_ind, i)
-  }
-}
-
-saveRDS(goals_post, "goals_post_new.rds")
-
-#Find superior models compared with model 1
-ch_ind = NULL
-for(i in 2:24){
-  print(i)
-  if(which(goals_post[[i]]$result$`Posterior Model Probabilities` == max(goals_post[[i]]$result$`Posterior Model Probabilities`)) == 2){
-    ch_ind = c(ch_ind, i)
-  }
-}
-
-
-ind_prob = do.call(rbind, lapply(goals_post, function(x) c(x$result$`Posterior Model Probabilities`, x$result$`Bayes Factors`[1,2])))
-ind_prob_data = data.frame(round(ind_prob,3))
-colnames(ind_prob_data) = c("prob for model 1", "prob for compared model", "BF12")
-ind_prob_data$model = 2:24
-ind_prob1 = ind_prob[,2]
-
-#Find the model with largest prob compared with model 1
-max_model1 = which(ind_prob1==max(ind_prob1)) + 1
-ch_ind1 = ch_ind[-(which(ch_ind == max_model1))]
-
-#Compare superior models to the model with largest prob
-goals_post1 = list()
-ch_ind2= NULL
-iter = 0
-for(i in ch_ind1){
-  iter = iter + 1
-  print(iter)
-  print(i)
-  goals_post1[[iter]] = rjmcmcpost(post.draw = list(draw,draw), 
-                                   g = list(gf[[max_model1]],gf[[i]]),
-                                   ginv =list(ginvf[[max_model1]],ginvf[[i]]), 
-                                   likelihood = list(L[[max_model1]],L[[i]]),
-                                   param.prior = list(p.prior[[max_model1]],p.prior[[i]]),
-                                   model.prior = rep(1/2,2), 
-                                   chainlength = 2000)
-  if(which(goals_post1[[iter]]$result$`Posterior Model Probabilities` == max(goals_post1[[iter]]$result$`Posterior Model Probabilities`)) == 2){
-    ch_ind2 = c(ch_ind2, i)
-  }
-}
-
-saveRDS(goals_post1, "goals_post1_new.rds")
-
-#Find superior models to the model with largest prob
-ch_ind2= NULL
-iter = 0
-for(i in ch_ind1){
-  iter = iter + 1
-  print(iter)
-  print(i)
-  
-  if(which(goals_post1[[iter]]$result$`Posterior Model Probabilities` == max(goals_post1[[iter]]$result$`Posterior Model Probabilities`)) == 2){
-    ch_ind2 = c(ch_ind2, i)
-  }
-}
-
-
-ind_prob2 = data.frame(do.call(rbind, lapply(goals_post1, function(x) c(x$result$`Posterior Model Probabilities`, x$result$`Bayes Factors`[1,2]))))
-ind_prob2_data = data.frame(round(ind_prob2,3))
-colnames(ind_prob2_data) = c("prob for model 1", "prob for compared model", "BF12")
-
-ind_prob2_data$model = ch_ind1
-
-#Save tables with posterior prob and BF
-write.csv(ind_prob2_data, "prob2_data_new.csv")
-write.csv(ind_prob_data, "prob_data_new.csv")
-
+#posterior model probabilities: model 10 gets the largest probability
+round(exp(logml)/sum(exp(logml)),4)
+saveRDS(model.bridge, "model_bridge_jags.rds")
 
