@@ -33,15 +33,15 @@ library(ggmap)
 setwd("Multivariate_DAGAR/RDA")
 
 #Import covariates
-covariates <- read.csv("covariates.csv")
-race <- read.csv("race.csv")
-sex <- read.csv("sex.csv")
-insurance <- read.csv("insurance.csv")
-smoking <- read.csv("smoking.csv")
+covariates <- read.csv("data/covariates.csv")
+race <- read.csv("data/race.csv")
+sex <- read.csv("data/sex.csv")
+insurance <- read.csv("data/insurance.csv")
+smoking <- read.csv("data/smoking.csv")
 smoking$smoking <- as.numeric(substr(smoking$Cigarette.Smoking.Rate., 1,4))
 
 #Import age-adjusted incidence rates for 4 cancers in California
-rate_5y <- read.csv("age_adjusted.csv")
+rate_5y <- read.csv("data/age_adjusted.csv")
 rate_CA = rate_5y[substr(rate_5y$State_county,1,2) == "CA",]
 
 rate_lung = rate_CA[rate_CA$Site_recode_ICD_O_3_WHO_2008=="Lung and Bronchus",]
