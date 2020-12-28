@@ -1,9 +1,10 @@
-#Import simulation results for all parameters (Output files from MDAGAR_gibbs_metroplis.R and GMCAR_jags.R)
+#Import simulation results for all parameters in each correlation scenario (Output files from MDAGAR_gibbs_metroplis.R and GMCAR_jags.R)
 
 #delete the 15 datasets with abnormal results for GMCAR
 index = c(2,6,8,17,19,25,26,29,37,44,54,73,76,89,91)
 
 #simulations are run in two parts parallelly with 50 datasets in each part
+#results are combined for 100 datasets
 #MDAGAR
 bhatd = cbind(readRDS("bhat_usa1.rds")[,1:50], readRDS("bhat_usa2.rds")[,51:100])[,-index]
 blowerd = cbind(readRDS("blower_usa1.rds")[,1:50], readRDS("blower_usa2.rds")[,51:100])[,-index]
