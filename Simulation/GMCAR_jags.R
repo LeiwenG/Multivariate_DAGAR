@@ -87,6 +87,14 @@ W1_path = matrix(0, nrow = 100, ncol = 48)
 W2_path = matrix(0, nrow = 100, ncol = 48)
 
 WAIC = rep(0,100)
+g1 = rep(0,100)
+D1 = rep(0,100)
+P1 = rep(0,100)
+g2 = rep(0,100)
+D2 = rep(0,100)
+P2 = rep(0,100)
+
+KL = matrix(0, nrow = 100, ncol = 15000)
 
 graphnum=3
 
@@ -103,10 +111,11 @@ sigma2 = sqrt(0.4)
 eta0_21 = 0.05
 eta1_21 = 0.1
 
-# Conduct simulation for low, medium and high correlation among diseases
-# low: eta0_21 = 0.05, eta1_21 = 0.1
-# medium: eta0_21 = 0.5, eta1_21 = 0.3
-# high: eta0_21 = 2.5, eta1_21 = 0.5
+# Change values to conduct simulation for different correlation scenarios among diseases
+# low correlation: eta0_21 = 0.05, eta1_21 = 0.1
+# medium correlation: eta0_21 = 0.5, eta1_21 = 0.3
+# high correlation: eta0_21 = 2.5, eta1_21 = 0.5
+
 
 
 for(seed in 1:100){
@@ -324,6 +333,7 @@ for(seed in 1:100){
   Covlower[seed,] = apply(CovD, 2, quantile, 0.025)
   Covupper[seed,] = apply(CovD, 2, quantile, 0.975)
   
+  #correlation between diseases
   corhat[seed,] = apply(cor, 2, mean)
   corlower[seed,] = apply(cor, 2, quantile, 0.025)
   corupper[seed,] = apply(cor, 2, quantile, 0.975)
@@ -331,6 +341,7 @@ for(seed in 1:100){
   W1_mcmc = result[[2]][,1:48]
   W2_mcmc = result[[2]][,49:96]
   
+  #WAIC
   PL_single <- matrix(0, nrow = 2*n, ncol = 15000)
   for(i in 1:15000){
     theta <- sample.mcmc[i,]
@@ -350,6 +361,69 @@ for(seed in 1:100){
   }
   
   WAIC[seed] <- WAIC(PL_single)
+  
+  #D score
+  Y_rep1 <- matrix(0, nrow = n, ncol = 15000)
+  Y_rep2 <- matrix(0, nrow = n, ncol = 15000)
+  for(i in 1:15000){
+    theta <- sample.mcmc[i,]
+    
+    beta1 <- theta[1:2]
+    beta2 <- theta[3:5]
+    sigmasq1 <- theta[6]
+    sigmasq2 <- theta[7]
+    set.seed(seed)
+    z1 <- rnorm(48, 0, 1)
+    z2 <- rnorm(48, 0, 1)
+    Y_rep1[,i] <- X1 %*% t(as.vector(beta1)) +  result[[2]]$W1[i,] + sqrt(as.numeric(sigmasq1)) * z1
+    Y_rep2[,i] <- X2 %*% t(as.vector(beta2)) +  result[[2]]$W2[i,] + sqrt(as.numeric(sigmasq2)) * z2
+    
+  }
+  mu_rep1 = rowMeans(Y_rep1)
+  mu_rep2 = rowMeans(Y_rep2)
+  
+  var_rep1 = rowVar(Y_rep1)
+  var_rep2 = rowVar(Y_rep2)
+  
+  G.latent1 = sum((Y1 - mu_rep1)^2)
+  P.latent1 = sum(var_rep1)
+  D.latent1 = G.latent1 + P.latent1
+  
+  G.latent2 = sum((Y2 - mu_rep2)^2)
+  P.latent2 = sum(var_rep2)
+  D.latent2 = G.latent2 + P.latent2
+  
+  g1[seed] = G.latent1
+  P1[seed] = P.latent1
+  D1[seed] = D.latent1
+  
+  g2[seed] = G.latent2
+  P2[seed] = P.latent2
+  D2[seed] = D.latent2
+  
+  #Kullback–Leibler divergence
+  KL_car = NULL
+  for(i in 1:nrow(estimatec)){
+    rho_est = estimatec[i, 10:11]
+    invD1 = diag(rowSums(Minc)) - rho_est[1]*Minc
+    invD2 = diag(rowSums(Minc)) - rho_est[2]*Minc
+    D1 = solve(invD1)
+    D2 = solve(invD2)
+    tausq1_est = estimatec[i,8]
+    tausq2_est = estimatec[i,9]
+    eta_est = estimatec[i,12:13]
+    A21_est = eta_est[1]*diag(n) + eta_est[2]*Minc
+    L_est = as.matrix(blockmatrix(names = c("I1","A","0","I2"), I1 = diag(n), 
+                                  A=A21_est, I2 = diag(n), dim=c(2,2)))
+    
+    G_est = as.matrix(bdiag(1/tausq1_est*D1, 1/tausq2_est*D2))
+    V_est = L_est%*%G_est%*%t(L_est)
+    
+    KL_car[i] = kl.norm(mu1 = rep(0, 2*n), S1= V, mu2 = rep(0, 2*n), S2= V_est)
+  }
+  
+  KL[seed,] = KL_car
+  
 }
 
 modelgraph = "usa"
@@ -395,3 +469,12 @@ saveRDS(cor_region, "cor_region.usa.rds")
 saveRDS(Cov_region, "Cov_region.usa.rds")
 
 saveRDS(WAIC, paste("WAIC_", modelgraph, ".rds", sep=""))
+saveRDS(KL, paste("KL_", modelgraph, ".rds", sep=""))
+
+saveRDS(g1, paste("G1_", modelgraph, ".rds", sep=""))
+saveRDS(D1, paste("D1_", modelgraph, ".rds", sep=""))
+saveRDS(P1, paste("P1_", modelgraph, ".rds", sep=""))
+
+saveRDS(g2, paste("G2_", modelgraph, ".rds", sep=""))
+saveRDS(D2, paste("D2_", modelgraph, ".rds", sep=""))
+saveRDS(P2, paste("P2_", modelgraph, ".rds", sep=""))
