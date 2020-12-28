@@ -30,7 +30,7 @@ library(mcmcse)
 library(LaplacesDemon)
 library(gtools)
 library(ggmap)
-setwd("/Users/Leiwen/Dropbox/Github/Multivariate_DAGAR/RDA")
+setwd("Multivariate_DAGAR/RDA")
 
 #Import covariates
 covariates <- read.csv("covariates.csv")
@@ -175,8 +175,8 @@ Dinv_new <- function(Rho, n, cn, ns, udnei,q){
   }
   return(invD)
 }
+#correlation function
 cor_fun = function(x){
-  #x = data.frame(param.est)
   A21_est = diag(x[["eta0_21"]], n) + x[["eta1_21"]] * Minc
   A31_est = diag(x[["eta0_31"]], n) + x[["eta1_31"]] * Minc
   A32_est = diag(x[["eta0_32"]], n) + x[["eta1_32"]] * Minc
@@ -190,9 +190,10 @@ cor_fun = function(x){
   A_est = as.matrix(blockmatrix(names = c("0","A21","A31","A41","0","0","A32","A42","0","0","0","A43","0","0","0","0"), 
                                 A21=A21_est, A31=A31_est, A32=A32_est, A41=A41_est, A42=A42_est, A43=A43_est, dim=c(4,4)))
   L_est = solve(diag(4*n)-A_est)
-  V_est = L_est%*%G_est%*%t(L_est)
-  #V_est = diag(c(rep(x[["sigmasq1"]],n),rep(x[["sigmasq2"]],n),rep(x[["sigmasq3"]],n),rep(x[["sigmasq4"]],n))) + 
-  # L_est%*%G_est%*%t(L_est)
+  WV_est = L_est%*%G_est%*%t(L_est)
+  Sigma_est = diag(c(rep(x[["sigmasq1"]],n),rep(x[["sigmasq2"]],n),rep(x[["sigmasq3"]],n),rep(x[["sigmasq4"]],n))) 
+  V_est = WV_est + Sigma_est
+  
   
   cor12 = diag(V_est[1:58, (1+58):(58+58)])/sqrt(diag(V_est[1:58, 1:58])*diag(V_est[(1+58):(58+58), (1+58):(58+58)]))
   cor13 = diag(V_est[1:58, (1+58*2):(58+58*2)])/sqrt(diag(V_est[1:58, 1:58])*diag(V_est[(1+58*2):(58+58*2), (1+58*2):(58+58*2)]))
@@ -211,11 +212,11 @@ mysummary = function(invector) {
 mcmc_list1 = readRDS("mcmc_list_new.rds")
 
 
-# Case 2: model 15  (Case1: model 16) 
-mcmc_select <- mcmc_list1[[15]]
-jags_result1 = mcmc_select$BUGSoutput$sims.array[,1,c(233:281,514:529)]
-jags_result2 = mcmc_select$BUGSoutput$sims.array[,2,c(233:281,514:529)]
-jags_result = rbind(jags_result1, jags_result2)
+# Case 1: model 10  (Case2: model 16) 
+mcmc_select <- mcmc_list1[[10]]
+jags_result1 = mcmc_select$BUGSoutput$sims.array[,1,c(233:285,518:529)]
+jags_result2 = mcmc_select$BUGSoutput$sims.array[,2,c(233:285,518:529)]
+jags_result <- rbind(jags_result1, jags_result2)
 
 W_mcmc1 =  mcmc_select$BUGSoutput$sims.array[,1,1:232]
 W_mcmc2 =  mcmc_select$BUGSoutput$sims.array[,2,1:232]
@@ -236,24 +237,24 @@ table1 <- data.frame(matrix(table_est[1:40], ncol = 4, byrow=F))
 table2 <- data.frame(matrix(table_est[54:65], ncol = 4, byrow=T))
 
 table <- rbind(table1, table2)
-colnames(table) <- c("Larynx", "Esophagus", "Lung", "Colorectum")
+colnames(table) <- c("Esophagus", "Larynx", "Colorectum", "Lung")
 write.csv(table, "table_est_new.csv")
 
 #Histogram for etas
 pdf("eta_final_new.pdf", height = 10, width = 10)
 par(mfrow=c(3,4))
-hist(jags_result[,42],xlab = "eta_021, esophagus | larynx",ylab = "", main="")
-hist(jags_result[,48],xlab = "eta_121, esophagus | larynx",ylab = "", main="")
-hist(jags_result[,43],xlab = "eta_031, lung | larynx",ylab = "", main="")
-hist(jags_result[,49],xlab = "eta_131, lung | larynx",ylab = "", main="")
-hist(jags_result[,45],xlab = "eta_041, colorectum | larynx",ylab = "", main="")
-hist(jags_result[,51],xlab = "eta_141, colorectum | larynx",ylab = "", main="")
-hist(jags_result[,44],xlab = "eta_032, lung | esophagus",ylab = "", main="")
-hist(jags_result[,50],xlab = "eta_132, lung | esophagus",ylab = "", main="")
-hist(jags_result[,46],xlab = "eta_042, colorectum | esophagus",ylab = "", main="")
-hist(jags_result[,52],xlab = "eta_142, colorectum | esophagus",ylab = "", main="")
-hist(jags_result[,47],xlab = "eta_043, colorectum | lung",ylab = "", main="")
-hist(jags_result[,53],xlab = "eta_143, colorectum | lung",ylab = "", main="")
+hist(jags_result[,42],xlab = "eta_021, larynx | esophageal",ylab = "", main="")
+hist(jags_result[,48],xlab = "eta_121, larynx | esophageal",ylab = "", main="")
+hist(jags_result[,43],xlab = "eta_031, colorectum | esophageal",ylab = "", main="")
+hist(jags_result[,49],xlab = "eta_131, colorectum | esophageal",ylab = "", main="")
+hist(jags_result[,44],xlab = "eta_032, colorectum | larynx",ylab = "", main="")
+hist(jags_result[,50],xlab = "eta_132, colorectum | larynx",ylab = "", main="")
+hist(jags_result[,45],xlab = "eta_041, lung | esophageal",ylab = "", main="")
+hist(jags_result[,51],xlab = "eta_141, lung | esophageal",ylab = "", main="")
+hist(jags_result[,46],xlab = "eta_042, lung | larynx",ylab = "", main="")
+hist(jags_result[,52],xlab = "eta_142, lung | larynx",ylab = "", main="")
+hist(jags_result[,47],xlab = "eta_043, lung | colorectum",ylab = "", main="")
+hist(jags_result[,53],xlab = "eta_143, lung | colorectum",ylab = "", main="")
 dev.off()
 
 
@@ -288,25 +289,19 @@ ca.poly$sig34 = 0
 ca.poly$sig34[which(cor_gibbs_est34[,4][order(final_perm)] > 0 | cor_gibbs_est34[,5][order(final_perm)] < 0)] = 1
 
 ## Plots for correlation in each county
-brks_fit1 = c(-0.6, -0.3, -0.1, 0, 0.1, 0.25, 0.75)
-color.pallete = rev(brewer.pal(6,"RdBu"))
-class.W1 = classIntervals(var=ca.poly$W_mean1, n=6, style="fixed", 
-                          fixedBreaks=brks_fit1, dataPrecision=4)
-color.code.W1 = findColours(class.W1, color.pallete)
-
-brks_fit = c(-0.1, 0.1, 0.3, 0.5, 0.7, 0.8, 0.9, 1)
-color.pallete = brewer.pal(7,"Blues")
-class.rate12 = classIntervals(var=ca.poly$rate12, n=7, style="fixed", 
+brks_fit = c(-0.5, 0.1, 0.3, 0.5, 0.7, 0.8)
+color.pallete = brewer.pal(5,"Blues")
+class.rate12 = classIntervals(var=ca.poly$rate12, n=5, style="fixed", 
                               fixedBreaks=brks_fit, dataPrecision=4)
-class.rate13 = classIntervals(var=ca.poly$rate13, n=7, style="fixed", 
+class.rate13 = classIntervals(var=ca.poly$rate13, n=5, style="fixed", 
                               fixedBreaks=brks_fit, dataPrecision=4)
-class.rate14 = classIntervals(var=ca.poly$rate14, n=7, style="fixed", 
+class.rate14 = classIntervals(var=ca.poly$rate14, n=5, style="fixed", 
                               fixedBreaks=brks_fit, dataPrecision=4)
-class.rate23 = classIntervals(var=ca.poly$rate23, n=7, style="fixed", 
+class.rate23 = classIntervals(var=ca.poly$rate23, n=5, style="fixed", 
                               fixedBreaks=brks_fit, dataPrecision=4)
-class.rate24 = classIntervals(var=ca.poly$rate24, n=7, style="fixed", 
+class.rate24 = classIntervals(var=ca.poly$rate24, n=5, style="fixed", 
                               fixedBreaks=brks_fit, dataPrecision=4)
-class.rate34 = classIntervals(var=ca.poly$rate34, n=7, style="fixed", 
+class.rate34 = classIntervals(var=ca.poly$rate34, n=5, style="fixed", 
                               fixedBreaks=brks_fit, dataPrecision=4)
 color.code.rate12 = findColours(class.rate12, color.pallete)
 color.code.rate13 = findColours(class.rate13, color.pallete)
@@ -315,29 +310,29 @@ color.code.rate23 = findColours(class.rate23, color.pallete)
 color.code.rate24 = findColours(class.rate24, color.pallete)
 color.code.rate34 = findColours(class.rate34, color.pallete)
 
-pdf("correlation_pairwise_15.pdf", height = 10, width = 10)
+pdf("correlation_pairwise_10.pdf", height = 10, width = 10)
 par(mfrow=c(3,2), oma = c(4, 1, 1, 1))
-leg.txt = c("-0.1 - 0.1", "0.1 - 0.3", "0.3 - 0.5", "0.5 - 0.7", "0.7 - 0.8", "0.8 - 0.9", "0.9 - 1.0") 
+leg.txt = c("< 0.1", "0.1 - 0.3", "0.3 - 0.5", "0.5 - 0.7", "0.7 - 0.9", "0.9 - 1") 
 
 plot(ca.poly, col = color.code.rate12)
-title(sub="(a) larynx cancer and esophageal cancer")
+title(sub="(a) esophageal cancer and larynx cancer")
 points(ca.coords[which(ca.poly$sig12==1),1], ca.coords[which(ca.poly$sig12==1),2], pch=10, col="yellow", cex=0.2)
 
-plot(ca.poly, col = color.code.rate14)
-title(sub="(b) larynx cancer and colorectum cancer" )
+plot(ca.poly, col = color.code.rate13)
+title(sub="(b) esophageal cancer and colorectum cancer" )
 points(ca.coords[which(ca.poly$sig14==1),1], ca.coords[which(ca.poly$sig14==1),2], pch=10, col="yellow", cex=0.2)
 
-plot(ca.poly, col = color.code.rate13)
-title(sub="(c) larynx cancer and lung cancer" )
-points(ca.coords[which(ca.poly$sig13==1),1], ca.coords[which(ca.poly$sig13==1),2], pch=10, col="yellow", cex=0.2)
-
-plot(ca.poly, col = color.code.rate24)
-title(sub="(d) esophageal cancer and colorectum cancer" )
-points(ca.coords[which(ca.poly$sig24==1),1], ca.coords[which(ca.poly$sig24==1),2], pch=10, col="yellow", cex=0.2)
+plot(ca.poly, col = color.code.rate14)
+title(sub="(c) esophageal cancer and lung cancer" )
+points(ca.coords[which(ca.poly$sig14==1),1], ca.coords[which(ca.poly$sig14==1),2], pch=10, col="yellow", cex=0.2)
 
 plot(ca.poly, col = color.code.rate23)
-title(sub="(e) esophageal cancer and lung cancer" )
+title(sub="(d) larynx cancer and colorectum cancer" )
 points(ca.coords[which(ca.poly$sig23==1),1], ca.coords[which(ca.poly$sig23==1),2], pch=10, col="yellow", cex=0.2)
+
+plot(ca.poly, col = color.code.rate24)
+title(sub="(e) larynx cancer and lung cancer" )
+points(ca.coords[which(ca.poly$sig24==1),1], ca.coords[which(ca.poly$sig24==1),2], pch=10, col="yellow", cex=0.2)
 
 
 plot(ca.poly, col = color.code.rate34)
@@ -356,55 +351,66 @@ dev.off()
 W_mean = apply(W_mcmc, 2, mean)
 W_mean1 = W_mean[1:58]
 ca.poly$W_mean1 = W_mean1[order(final_perm)]
+#brks_fit1 = quantile(W_mean1)
+brks_fit1 = c(-1.2, -0.5, 0, 0.1, 0.5, 1)
+color.pallete = rev(brewer.pal(5,"RdBu"))
+class.W1 = classIntervals(var=ca.poly$W_mean1, n=5, style="fixed", 
+                          fixedBreaks=brks_fit1, dataPrecision=4)
+color.code.W1 = findColours(class.W1, color.pallete)
 
 W_mean2 = W_mean[59:116]
 ca.poly$W_mean2 = W_mean2[order(final_perm)]
-brks_fit2 = c(-2.5, -0.5, 0, 0.35, 1, 2, 3)
-class.W2 = classIntervals(var=ca.poly$W_mean2, n=6, style="fixed", 
+#brks_fit2 = quantile(W_mean2)
+brks_fit2 = c(-1, -0.5, 0, 0.1, 0.5, 1.1)
+class.W2 = classIntervals(var=ca.poly$W_mean2, n=5, style="fixed", 
                           fixedBreaks=brks_fit2, dataPrecision=4)
 color.code.W2 = findColours(class.W2, color.pallete)
 
 W_mean3 = W_mean[117:174]
 ca.poly$W_mean3 = W_mean3[order(final_perm)]
-brks_fit3 = c(-21, -2, 2, 5, 10, 20, 31)
-class.W3 = classIntervals(var=ca.poly$W_mean3, n=6, style="fixed", 
+#brks_fit3 = quantile(W_mean3)
+brks_fit3 = c(-5, -3, 0, 1, 3, 6)
+class.W3 = classIntervals(var=ca.poly$W_mean3, n=5, style="fixed", 
                           fixedBreaks=brks_fit3, dataPrecision=4)
 color.code.W3 = findColours(class.W3, color.pallete)
 
-W_mean4 = W_mean[118:232]
+W_mean4 = W_mean[175:232]
 ca.poly$W_mean4 = W_mean4[order(final_perm)]
-brks_fit4 = c(-21, -1, 1, 3, 10, 20, 31)
-class.W4 = classIntervals(var=ca.poly$W_mean4, n=6, style="fixed", 
+#brks_fit4 = quantile(W_mean4)
+brks_fit4 = c(-20, -10, 0, 5, 10, 32)
+class.W4 = classIntervals(var=ca.poly$W_mean4, n=5, style="fixed", 
                           fixedBreaks=brks_fit4, dataPrecision=4)
 color.code.W4 = findColours(class.W4, color.pallete)
+
 # Plots for random effects
-pdf("random_covariates.pdf", height = 10, width = 10)
+pdf("/Users/Leiwen/Box Sync/Research/data_new/random_covariates_best10.pdf", height = 10, width = 10)
 par(mfrow=c(2,2), oma = c(0,0,4,0) + 0.1, mar = c(0,0,1,0) + 0.1)
 
-plot(ca.poly, col = color.code.W3)
-leg.txt3 = c("-21 - -2", "-2 - 2", "2 - 5", "5 - 10", "10 - 20", "20 - 31")
-legend("bottomleft", title="Lung cancer",legend=leg.txt3, cex=1.25, bty="n", horiz = FALSE, 
-       fill = color.pallete)
-
-plot(ca.poly, col = color.code.W2)
-leg.txt = c("-2.5 - -0.5", "-0.5 - 0", "0 - 0.35", "0.35 - 1", "1 - 2", "2 - 3") 
-legend("bottomleft", title="Esophageal cancer", legend=leg.txt, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE, 
+plot(ca.poly, col = color.code.W4)
+leg.txt1 = c("-20 - -10", "-10 - 0", "0 - 5", "5 - 10", "10 - 32")
+legend("bottomleft", title="Lung cancer",legend=leg.txt1, cex=1.25, bty="n", horiz = FALSE, 
        fill = color.pallete)
 
 plot(ca.poly, col = color.code.W1)
-leg.txt = c("-0.6 - -0.3", "-0.3 - -0.1", "-0.1 - 0", "0 - 0.1", "0.1 - 0.25", "0.25 - 0.75") 
-legend("bottomleft", title="Larynx cancer", legend=leg.txt, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE, 
+leg.txt2 = c("-1.2 - -0.5", "-0.5 - 0", "0 - 0.1", "0.1 - 0.5", "0.5 - 1")
+legend("bottomleft", title="Esophageal cancer", legend=leg.txt2, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE, 
        fill = color.pallete)
 
-plot(ca.poly, col = color.code.W4)
-leg.txt4 = c("-21 - -1", "-1 - 1", "1 - 3", "3 - 10", "10 - 20", "20 - 31")
+plot(ca.poly, col = color.code.W2)
+leg.txt3 = c("-1 - -0.5", "-0.5 - -0", "0 - 0.1", "0.1 - 0.5", "0.5 - 1.1") 
+legend("bottomleft", title="Larynx cancer", legend=leg.txt3, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE, 
+       fill = color.pallete)
+
+plot(ca.poly, col = color.code.W3)
+leg.txt4 = c("-5 - -3", "-3 - 0", "0 - 1", "1 - 3", "3 - 6")
 legend("bottomleft",title="Colorectum cancer", legend=leg.txt4, cex=1.25, bty="n", horiz = FALSE, 
        fill = color.pallete)
-
 dev.off()
 
+
+
 ######## Posterior prediction #############
-rate_list1 = rate_list[models[15,]]
+rate_list1 = rate_list[models[10,]]
 
 Y1 = rate_list1[[1]]$rate[final_perm]
 Y2 = rate_list1[[2]]$rate[final_perm]
@@ -426,10 +432,11 @@ for(iter in 1:30000){
 }
 y.mean = apply(y.est,2,mean)
 
-ca.poly$rate_larynx_est = y.mean[1:58][order(final_perm)]
-ca.poly$rate_esophagus_est = y.mean[59:116][order(final_perm)]
-ca.poly$rate_lung_est = y.mean[117:174][order(final_perm)]
-ca.poly$rate_colrect_est = y.mean[175:232][order(final_perm)]
+ca.poly$rate_esophagus_est = y.mean[1:58][order(final_perm)]
+ca.poly$rate_larynx_est = y.mean[59:116][order(final_perm)]
+ca.poly$rate_colrect_est = y.mean[117:174][order(final_perm)]
+ca.poly$rate_lung_est = y.mean[175:232][order(final_perm)]
+
 
 brks_fit_lung = c(22, 41, 45, 51, 80)
 brks_fit_esophagus = c(0, 3.5, 3.9, 4.5, 12)
@@ -452,7 +459,7 @@ color.code.rate_larynx = findColours(class.rate_larynx, color.pallete)
 color.code.rate_colrect = findColours(class.rate_colrect, color.pallete)
 
 
-pdf("post_incidence_new.pdf", height = 10, width = 10)
+pdf("/Users/Leiwen/Box Sync/Research/data_new/post_incidence_bestnew.pdf", height = 10, width = 10)
 par(mfrow=c(2,2), oma = c(0,0,4,0) + 0.1, mar = c(0,0,1,0) + 0.1)
 
 
@@ -479,9 +486,7 @@ legend("bottomleft",title="Colorectum cancer", legend=leg.txt4, cex=1.25, bty="n
 dev.off()
 
 ###### Same Model without covariates #########
-
-i=15
-rate_list1 = rate_list[models[i,]]
+rate_list1 = rate_list[models[10,]]
 
 Y1 = rate_list1[[1]]$rate[final_perm]
 Y2 = rate_list1[[2]]$rate[final_perm]
@@ -490,9 +495,6 @@ Y4 = rate_list1[[4]]$rate[final_perm]
 
 
 Y = c(Y1,Y2,Y3,Y4)
-#X = as.matrix(bdiag(bdiag(X1, X2), bdiag(X3,X4)))
-
-tod1=Sys.time()
 
 sink("DAGAR_nocov.txt")
 cat("
@@ -644,7 +646,6 @@ model.param <- c("beta", "rho1", "rho2", "rho3", "rho4", "tau1", "tau2", "tau3",
 set.seed(123)
 result_nocov <- jags(model.data, model.inits, model.param, "DAGAR_nocov.txt",
                      n.chains = 2, n.iter = 30000,n.burnin = 15000, n.thin = 1)
-tod2=Sys.time()
 
 saveRDS(result_nocov, "result_nocov.rds")
 
@@ -661,119 +662,60 @@ colnames(jags_result) = c("beta1", "beta2","beta3","beta4", "deviance", "eta0_21
                           "tausq1", "tausq2", "tausq3", "tausq4","sigmasq1","sigmasq2","sigmasq3","sigmasq4")
 estimate1 <- round(t(apply(jags_result, 2, mysummary)),2)
 
-#Table for coefficients
-table_est = paste(estimate1[,1], " (", estimate1[,4], ", ", estimate1[,5], ")", sep="")
-table1 <- data.frame(matrix(table_est[1:4], ncol = 4, byrow=F))
-table2 <- data.frame(matrix(table_est[18:29], ncol = 4, byrow=T))
-
-table <- rbind(table1, table2)
-colnames(table) <- c("Larynx", "Esophagus", "Lung", "Colorectum")
-write.csv(table, "table_est_new.csv")
-
-#Histogram for etas
-pdf("eta_final_new.pdf", height = 10, width = 10)
-par(mfrow=c(3,4))
-hist(jags_result[,42],xlab = "eta_021, esophagus | larynx",ylab = "", main="")
-hist(jags_result[,48],xlab = "eta_121, esophagus | larynx",ylab = "", main="")
-hist(jags_result[,43],xlab = "eta_031, lung | larynx",ylab = "", main="")
-hist(jags_result[,49],xlab = "eta_131, lung | larynx",ylab = "", main="")
-hist(jags_result[,45],xlab = "eta_041, colorectum | larynx",ylab = "", main="")
-hist(jags_result[,51],xlab = "eta_141, colorectum | larynx",ylab = "", main="")
-hist(jags_result[,44],xlab = "eta_032, lung | esophagus",ylab = "", main="")
-hist(jags_result[,50],xlab = "eta_132, lung | esophagus",ylab = "", main="")
-hist(jags_result[,46],xlab = "eta_042, colorectum | esophagus",ylab = "", main="")
-hist(jags_result[,52],xlab = "eta_142, colorectum | esophagus",ylab = "", main="")
-hist(jags_result[,47],xlab = "eta_043, colorectum | lung",ylab = "", main="")
-hist(jags_result[,53],xlab = "eta_143, colorectum | lung",ylab = "", main="")
-dev.off()
-
-
-################## Correlation in each county ###############
-cor_gibbs = apply(jags_result,1,cor_fun)
-cor_gibbs_est = apply(cor_gibbs,1,mysummary)
-
-cor_gibbs_est12 = t(cor_gibbs_est[,1:58])
-cor_gibbs_est13 = t(cor_gibbs_est[,(1+58):(58+58)])
-cor_gibbs_est14 = t(cor_gibbs_est[,(1+58*2):(58+58*2)])
-cor_gibbs_est23 = t(cor_gibbs_est[,(1+58*3):(58+58*3)])
-cor_gibbs_est24 = t(cor_gibbs_est[,(1+58*4):(58+58*4)])
-cor_gibbs_est34 = t(cor_gibbs_est[,(1+58*5):(58+58*5)])
-
-ca.poly$rate12 = cor_gibbs_est12[,1][order(final_perm)]
-ca.poly$rate13 = cor_gibbs_est13[,1][order(final_perm)]
-ca.poly$rate14 = cor_gibbs_est14[,1][order(final_perm)]
-ca.poly$rate23 = cor_gibbs_est23[,1][order(final_perm)]
-ca.poly$rate24 = cor_gibbs_est24[,1][order(final_perm)]
-ca.poly$rate34 = cor_gibbs_est34[,1][order(final_perm)]
-ca.poly$sig12 = 0
-ca.poly$sig12[which(cor_gibbs_est12[,4][order(final_perm)] > 0 | cor_gibbs_est12[,5][order(final_perm)] < 0)] = 1
-ca.poly$sig13 = 0
-ca.poly$sig13[which(cor_gibbs_est13[,4][order(final_perm)] > 0 | cor_gibbs_est13[,5][order(final_perm)] < 0)] = 1
-ca.poly$sig14 = 0
-ca.poly$sig14[which(cor_gibbs_est14[,4][order(final_perm)] > 0 | cor_gibbs_est14[,5][order(final_perm)] < 0)] = 1
-ca.poly$sig23 = 0
-ca.poly$sig23[which(cor_gibbs_est23[,4][order(final_perm)] > 0 | cor_gibbs_est23[,5][order(final_perm)] < 0)] = 1
-ca.poly$sig24 = 0
-ca.poly$sig24[which(cor_gibbs_est24[,4][order(final_perm)] > 0 | cor_gibbs_est24[,5][order(final_perm)] < 0)] = 1
-ca.poly$sig34 = 0
-ca.poly$sig34[which(cor_gibbs_est34[,4][order(final_perm)] > 0 | cor_gibbs_est34[,5][order(final_perm)] < 0)] = 1
-
 ############# Random effects ####################
 W_mean = apply(W_mcmc, 2, mean)
 W_mean1 = W_mean[1:58]
 ca.poly$W_mean1 = W_mean1[order(final_perm)]
-quantile(W_mean1)
-brks_fit1 = c(-0.6, -0.3, -0.1, 0, 0.1, 0.25, 0.76)
-color.pallete = rev(brewer.pal(6,"RdBu"))
-class.W1 = classIntervals(var=ca.poly$W_mean1, n=6, style="fixed", 
+brks_fit1 = c(-1.2, -0.5, 0, 0.1, 0.5, 1)
+color.pallete = rev(brewer.pal(5,"RdBu"))
+class.W1 = classIntervals(var=ca.poly$W_mean1, n=5, style="fixed", 
                           fixedBreaks=brks_fit1, dataPrecision=4)
-
+color.code.W1 = findColours(class.W1, color.pallete)
 
 W_mean2 = W_mean[59:116]
 ca.poly$W_mean2 = W_mean2[order(final_perm)]
-brks_fit2 = c(-2.5, -0.5, 0, 0.35, 1, 2, 3)
-class.W2 = classIntervals(var=ca.poly$W_mean2, n=6, style="fixed", 
+brks_fit2 = c(-1, -0.5, 0, 0.1, 0.5, 1.1)
+class.W2 = classIntervals(var=ca.poly$W_mean2, n=5, style="fixed", 
                           fixedBreaks=brks_fit2, dataPrecision=4)
 color.code.W2 = findColours(class.W2, color.pallete)
 
 W_mean3 = W_mean[117:174]
 ca.poly$W_mean3 = W_mean3[order(final_perm)]
-brks_fit3 = c(-21, -2, 2, 5, 10, 20, 31)
-class.W3 = classIntervals(var=ca.poly$W_mean3, n=6, style="fixed", 
+brks_fit3 = c(-5, -3, 0, 1, 3, 6)
+class.W3 = classIntervals(var=ca.poly$W_mean3, n=5, style="fixed", 
                           fixedBreaks=brks_fit3, dataPrecision=4)
 color.code.W3 = findColours(class.W3, color.pallete)
 
-W_mean4 = W_mean[118:232]
+W_mean4 = W_mean[175:232]
 ca.poly$W_mean4 = W_mean4[order(final_perm)]
-brks_fit4 = c(-21, -1, 1, 3, 10, 20, 31)
-class.W4 = classIntervals(var=ca.poly$W_mean4, n=6, style="fixed", 
+brks_fit4 = c(-20, -10, 0, 5, 10, 32)
+class.W4 = classIntervals(var=ca.poly$W_mean4, n=5, style="fixed", 
                           fixedBreaks=brks_fit4, dataPrecision=4)
 color.code.W4 = findColours(class.W4, color.pallete)
 
-
-
 # Plots for random effects
-pdf("/Users/Leiwen/Box Sync/Research/data_new/random_nocovariates.pdf", height = 10, width = 10)
+pdf("random_nocovariates.pdf", height = 10, width = 10)
 par(mfrow=c(2,2), oma = c(0,0,4,0) + 0.1, mar = c(0,0,1,0) + 0.1)
+plot(ca.poly, col = color.code.W4)
+leg.txt1 = c("-20 - -10", "-10 - 0", "0 - 5", "5 - 10", "10 - 32")
+legend("bottomleft", title="Lung cancer",legend=leg.txt1, cex=1.25, bty="n", horiz = FALSE, 
+       fill = color.pallete)
 
 plot(ca.poly, col = color.code.W1)
-leg.txt = c("-0.6 - -0.3", "-0.3 - -0.1", "-0.1 - 0", "0 - 0.1", "0.1 - 0.25", "0.25 - 0.76") 
-legend("bottomleft", title="Larynx cancer", legend=leg.txt, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE, 
+leg.txt2 = c("-1.2 - -0.5", "-0.5 - 0", "0 - 0.1", "0.1 - 0.5", "0.5 - 1")
+legend("bottomleft", title="Esophageal cancer", legend=leg.txt2, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE, 
        fill = color.pallete)
 
 plot(ca.poly, col = color.code.W2)
-leg.txt = c("-2.5 - -0.5", "-0.5 - 0", "0 - 0.35", "0.35 - 1", "1 - 2", "2 - 3") 
-legend("bottomleft", title="Esophageal cancer", legend=leg.txt, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE, 
+leg.txt3 = c("-1 - -0.5", "-0.5 - -0", "0 - 0.1", "0.1 - 0.5", "0.5 - 1.1") 
+legend("bottomleft", title="Larynx cancer", legend=leg.txt3, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE, 
        fill = color.pallete)
 
 plot(ca.poly, col = color.code.W3)
-leg.txt3 = c("-21 - -2", "-2 - 2", "2 - 5", "5 - 10", "10 - 20", "20 - 31")
-legend("bottomleft", title="Lung cancer",legend=leg.txt3, cex=1.25, bty="n", horiz = FALSE, 
-       fill = color.pallete)
-
-plot(ca.poly, col = color.code.W4)
-leg.txt4 = c("-21 - -1", "-1 - 1", "1 - 3", "3 - 10", "10 - 20", "20 - 31")
+leg.txt4 = c("-5 - -3", "-3 - 0", "0 - 1", "1 - 3", "3 - 6")
 legend("bottomleft",title="Colorectum cancer", legend=leg.txt4, cex=1.25, bty="n", horiz = FALSE, 
        fill = color.pallete)
 
 dev.off()
+
+
