@@ -133,7 +133,7 @@ sex1 = sex[substr(sex$State_county,1,2) == "CA"&sex$Sex=="Male",]
 insurance1 = insurance[substr(insurance$State_county,1,2) == "CA"&insurance$Insurance_Recode_2007=="Uninsured",]
 
 # Create covariates matrix for each cancer
-# For case 1, smoking is excluded in covariates; All covariates are included in case 2.
+# For Case 1, all covariates are included; But smoking is excluded in covariates for Case 2.
 rate_lung1 = cbind(rate_lung, smoking$smoking, county_attribute1[,2:6], race1$Row_Percent, sex1$Row_Percent,insurance1$Row_Percent)
 colnames(rate_lung1) = c("county", "site", "rate", "count", "population", "smoking", "young","old", "highschool", "poverty", "unemployed", "black", "male", "uninsured")
 rate_esophagus1 = cbind(rate_esophagus, smoking$smoking, county_attribute1[,2:6], race1$Row_Percent, sex1$Row_Percent,insurance1$Row_Percent)
@@ -143,9 +143,11 @@ colnames(rate_larynx1) = c("county", "site", "rate", "count", "population", "smo
 rate_colrect1 = cbind(rate_colrect, smoking$smoking, county_attribute1[,2:6], race1$Row_Percent, sex1$Row_Percent,insurance1$Row_Percent)
 colnames(rate_colrect1) = c("county", "site", "rate", "count", "population", "smoking", "young","old", "highschool", "poverty", "unemployed", "black", "male", "uninsured")
 
-# Areal map for two important covariates: black and smoking
+# Areal map for three important covariates: smoking, black and uninsured
 ca.poly$black = race1$Row_Percent
 ca.poly$smoke = smoking$smoking
+ca.poly$uninsure = insurance1$Row_Percent
+
 brks_fit_black = quantile(ca.poly$black)
 class.black = classIntervals(var=ca.poly$black, n=4, style="fixed", 
                              fixedBreaks=brks_fit_black, dataPrecision=4)
@@ -154,16 +156,27 @@ brks_fit_smoke = quantile(ca.poly$smoke)
 class.smoke = classIntervals(var=ca.poly$smoke, n=4, style="fixed", 
                              fixedBreaks=brks_fit_smoke, dataPrecision=4)
 color.code.smoke = findColours(class.smoke, color.pallete)
+rks_fit_uninsure = quantile(ca.poly$uninsure)
+class.uninsure = classIntervals(var=ca.poly$uninsure, n=4, style="fixed",
+                             fixedBreaks=brks_fit_uninsure, dataPrecision=4)
+color.code.uninsure = findColours(class.uninsure, color.pallete)
 
 pdf("covariates.pdf", height = 6, width = 10)
-par(mfrow=c(1,2), oma = c(0,0,4,0) + 0.1, mar = c(0,0,1,0) + 0.1)
+par(mfrow=c(1,3), oma = c(0,0,4,0) + 0.1, mar = c(0,0,1,0) + 0.1)
+
 plot(ca.poly, col = color.code.smoke)
-leg.txt = c("6.70 - 11.50", "11.50 - 13.85", "13.85 - 16.28", "16.28 - 25.50") 
-legend("bottomleft", title="Smoke (%)", legend=leg.txt, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE, 
+leg.txt = c("6.70 - 11.50", "11.50 - 13.85", "13.85 - 16.28", "16.28 - 25.50")
+legend("bottomleft", title="Smoke (%)", legend=leg.txt, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE,
        fill = color.pallete)
+
 plot(ca.poly, col = color.code.black)
-leg.txt = c("0.90 - 1.90", "1.90 - 2.80", "2.80 - 5.15", "5.15 - 16.90") 
-legend("bottomleft", title="Black (%)", legend=leg.txt, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE, 
+leg.txt = c("0.90 - 1.90", "1.90 - 2.80", "2.80 - 5.15", "5.15 - 16.90")
+legend("bottomleft", title="Black (%)", legend=leg.txt, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE,
+       fill = color.pallete)
+
+plot(ca.poly, col = color.code.uninsure)
+leg.txt = c("0.0 - 0.6", "0.6 - 0.9", "0.9 - 1.4", "1.4 - 3.8")
+legend("bottomleft", title="Uninsured (%)", legend=leg.txt, xpd = TRUE, cex=1.25, bty="n", horiz = FALSE,
        fill = color.pallete)
 dev.off()
 
@@ -412,13 +425,24 @@ for(i in 1:24){
   model.param <- c("beta", "rho1", "rho2", "rho3", "rho4", "tau1", "tau2", "tau3", "tau4", "eta021", "eta121",
                    "eta031", "eta131", "eta032", "eta132","eta041", "eta141",
                    "eta042", "eta142", "eta043", "eta143", "vare1", "vare2", "vare3", "vare4", "W", "loglik")
-  set.seed(123)
+  model.param2 <- c("beta", "rho1", "rho2", "rho3", "rho4", "tau1", "tau2", "tau3", "tau4", "eta021", "eta121",
+                    "eta031", "eta131", "eta032", "eta132","eta041", "eta141",
+                    "eta042", "eta142", "eta043", "eta143", "vare1", "vare2", "vare3", "vare4")
+
+  set.seed(125)
+  #Results for post-analysis
   result1 <- jags(model.data, model.inits, model.param, "MDAGAR.txt",
+                  n.chains = 2, n.iter = 30000,n.burnin = 15000, n.thin = 1)
+  #Results for model selection
+  result2 <- jags(model.data, model.inits, model.param2, "DAGAR.txt",
                   n.chains = 2, n.iter = 30000,n.burnin = 15000, n.thin = 1)
   tod2=Sys.time()
   
   mcmc_list[[i]] = result1
+  mcmc_list2[[i]] = result2
 }
 
 # Save MCMC outputs of all permutations for model selection
 saveRDS(mcmc_list, "mcmc_list_new.rds")
+saveRDS(mcmc_list2, "mcmc_list_new2.rds")
+
