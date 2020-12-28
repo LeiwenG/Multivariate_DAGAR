@@ -30,7 +30,7 @@ library(mcmcse)
 library(LaplacesDemon)
 library(gtools)
 library(ggmap)
-setwd("/Users/Leiwen/Dropbox/Github/Multivariate_DAGAR/RDA")
+setwd("Multivariate_DAGAR/RDA")
 
 #Import covariates
 covariates <- read.csv("covariates.csv")
