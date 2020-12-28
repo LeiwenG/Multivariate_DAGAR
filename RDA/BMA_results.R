@@ -1,4 +1,4 @@
-source("/Users/Leiwen/Box Sync/Research/src/data_generation_case1.R")
+source("data_generation_case1.R")
 library(classInt)
 library(RColorBrewer)
 #jags outputs for all models
