@@ -1,3 +1,4 @@
+#Import simalution results
 source("result_data.R")
 summary.function = function(x){
   m = mean(x)
