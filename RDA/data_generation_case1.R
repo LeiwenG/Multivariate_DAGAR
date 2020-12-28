@@ -28,15 +28,17 @@ library(mcmcse)
 library(LaplacesDemon)
 library(gtools)
 library(ggmap)
-rate_5y <- read.csv("~/Box Sync/Research/data/seer/age_adjusted.csv")
-covariates <- read.csv("~/Box Sync/Research/data/seer/covariates.csv")
-race <- read.csv("~/Box Sync/Research/data/seer/race.csv")
-sex <- read.csv("~/Box Sync/Research/data/seer/sex.csv")
-insurance <- read.csv("~/Box Sync/Research/data/seer/insurance.csv")
-smoking <- read.csv("/Users/Leiwen/Box Sync/Research/data_new/smoking.csv")
+
+#Import covariates
+covariates <- read.csv("data/covariates.csv")
+race <- read.csv("data/race.csv")
+sex <- read.csv("data/sex.csv")
+insurance <- read.csv("data/insurance.csv")
+smoking <- read.csv("data/smoking.csv")
 smoking$smoking <- as.numeric(substr(smoking$Cigarette.Smoking.Rate., 1,4))
 
-
+#Import age-adjusted incidence rates for 4 cancers in California
+rate_5y <- read.csv("data/age_adjusted.csv")
 rate_CA = rate_5y[substr(rate_5y$State_county,1,2) == "CA",]
 
 rate_lung = rate_CA[rate_CA$Site_recode_ICD_O_3_WHO_2008=="Lung and Bronchus",]
@@ -51,6 +53,23 @@ rate_larynx = rate_larynx[order(readr::parse_number(as.character(rate_larynx$Sta
 rate_colrect = rate_CA[rate_CA$Site_recode_ICD_O_3_WHO_2008=="Colon and Rectum",]
 rate_colrect = rate_colrect[order(readr::parse_number(as.character(rate_colrect$State_county))),]
 
+
+#County information
+county.ID <- sapply(strsplit(ca.county$names, ","), function(x) x[2])
+ca.poly = map2SpatialPolygons(ca.county, IDs=county.ID)
+ca.poly$rate_lung = rate_lung$Age_Adjusted_Rate
+ca.poly$rate_esophagus = rate_esophagus$Age_Adjusted_Rate
+ca.poly$rate_larynx = rate_larynx$Age_Adjusted_Rate
+ca.poly$rate_colrect = rate_colrect$Age_Adjusted_Rate
+ca.poly$smoking = smoking$smoking
+
+ca.coords = coordinates(ca.poly)
+
+################## Data construction and adjacency matrix ###########
+
+## Data
+
+# Covariates in percentage
 county_attribute = covariates[substr(covariates$State_county,1,2) == "CA",]
 county_attribute$state = readr::parse_number(as.character(county_attribute$State_county))
 county_attribute1 = data.frame(county_attribute[order(county_attribute$state),])
@@ -64,6 +83,8 @@ race1 = race[substr(race$State_county,1,2) == "CA"&race$Race_recode_White_Black_
 sex1 = sex[substr(sex$State_county,1,2) == "CA"&sex$Sex=="Male",]
 insurance1 = insurance[substr(insurance$State_county,1,2) == "CA"&insurance$Insurance_Recode_2007=="Uninsured",]
 
+# Create covariates matrix for each cancer
+# For Case 1, all covariates are included; But smoking is excluded in covariates for Case 2.
 rate_lung1 = cbind(rate_lung, smoking$smoking, county_attribute1[,2:6], race1$Row_Percent, sex1$Row_Percent,insurance1$Row_Percent)
 colnames(rate_lung1) = c("county", "site", "rate", "count", "population", "smoking", "young","old", "highschool", "poverty", "unemployed", "black", "male", "uninsured")
 rate_esophagus1 = cbind(rate_esophagus, smoking$smoking, county_attribute1[,2:6], race1$Row_Percent, sex1$Row_Percent,insurance1$Row_Percent)
@@ -76,10 +97,7 @@ colnames(rate_colrect1) = c("county", "site", "rate", "count", "population", "sm
 rate_list = list(rate_lung1, rate_esophagus1, rate_larynx1, rate_colrect1)
 
 
-county.ID <- sapply(strsplit(ca.county$names, ","), function(x) x[2])
-ca.poly = map2SpatialPolygons(ca.county, IDs=county.ID)
-
-## Adjacency matrix
+## Create adjacency matrix and neighbor info
 ca.neighbors = poly2nb(ca.poly)
 n=length(ca.neighbors)
 
