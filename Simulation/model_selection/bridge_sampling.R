@@ -161,10 +161,12 @@ true_model = 1
 
 mp_seed = list()
 logml_seed = list()
+
 ##### data generation (50 datasets) #####
 for(seed in 1:50){
   print(seed)
   set.seed(seed)
+
   W1=as.vector(rmvnorm(1,rep(0,q*n),V))
   reorder = order(rep(models[true_model,], each = 48))
   W = W1[reorder]
@@ -194,6 +196,7 @@ for(seed in 1:50){
   X_list = list(X1, X2, X3)
   
   mcmc_list = list()
+  # Results from six permutations
   for(i in 1:6){
     
     Y_list1 = Y_list[models[i,]]
@@ -210,8 +213,7 @@ for(seed in 1:50){
     Y = c(Y1,Y2,Y3)
     X = as.matrix(bdiag(bdiag(X1, X2), X3))
     
-    tod1=Sys.time()
-    
+    # Model for three diseases
     sink("DAGAR.txt")
     cat("
         model
@@ -333,7 +335,6 @@ for(seed in 1:50){
     set.seed(123)
     result1 <- jags(model.data, model.inits, model.param, "DAGAR.txt",
                     n.chains = 2, n.iter = 30000,n.burnin = 15000, n.thin = 1)
-    tod2=Sys.time()
     
     mcmc_list[[i]] = result1
   }
@@ -358,6 +359,7 @@ for(seed in 1:50){
     Xlist[[i]] = as.matrix(bdiag(bdiag(X1, X2), X3))
   }
   
+  #likelihood function
   Likli_fun = function(samples.row, data){
     A21_est = diag(samples.row["eta021"], data$n) + samples.row["eta121"] * data$Minc
     A31_est = diag(samples.row["eta031"], data$n) + samples.row["eta131"] * data$Minc
@@ -381,6 +383,7 @@ for(seed in 1:50){
     as.numeric(-2*data$n*log(2*pi) + 1/2*logdet(nearPD(Prec)$mat) - 1/2*t(data$Y-mu)%*%Prec%*%(data$Y-mu))
   }
   
+  #unnormalized joint posterior function
   log_posterior <- function(samples.row, data) {
     
     eta_sum = dnorm(samples.row["eta021"], 0, 10, log=T) + dnorm(samples.row["eta121"], 0, 10, log=T) +
@@ -401,6 +404,7 @@ for(seed in 1:50){
     as.numeric(Likli_fun(samples.row, data) + eta_sum + rho_sum + tau_sum + sigma_sum + beta_sum)
   }
   
+  #upper and lower bound for parameters
   beta_name = NULL
   for(par in 1:8){
     beta_name = c(beta_name, paste("beta[", par, "]", sep=""))
@@ -413,6 +417,8 @@ for(seed in 1:50){
   names(lb) <- names(ub) <- cname
   lb[15:23] <- 0
   ub[15:17] <- 0.999
+  
+  #bridge sampling for log marginal likelihood
   model.bridge = list()
   for(model in 1:6){
     print(model)
