@@ -4,13 +4,16 @@ This repository contains the code files of the analyses in "Hierarchical Multiva
 
 # Roadmap
 
-| Folder Name | Intro              |
-|-------------|--------------------|
-| Simulation  | Simuation Studies  | 
-| RDA         | Real Data Analysis |
+| Folder Name | Intro              | Details                                                |
+|-------------|--------------------|--------------------------------------------------------|
+| Simulation  | Simuation Studies  | Model assessment and model selection (bridge sampling) | 
+| RDA         | Real Data Analysis | Raw data and analysis for two cases                    |
 
 # Authors
 
 | Name       | Email              |                                               |
 |------------|--------------------|-----------------------------------------------|
 | Leiwen Gao | gaoleiwen@ucla.edu | PhD student, Department of Biostatistics UCLA |
+
+# Notes
+* You are welcome to contact me for bug reporting.
