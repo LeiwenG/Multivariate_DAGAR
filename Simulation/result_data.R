@@ -4,7 +4,7 @@
 index = c(2,6,8,17,19,25,26,29,37,44,54,73,76,89,91)
 
 #simulations are run in two parts parallelly with 50 datasets in each part
-#results are combined for 100 datasets
+#results are combined for 85 datasets
 #MDAGAR
 bhatd = cbind(readRDS("bhat_usa1.rds")[,1:50], readRDS("bhat_usa2.rds")[,51:100])[,-index]
 blowerd = cbind(readRDS("blower_usa1.rds")[,1:50], readRDS("blower_usa2.rds")[,51:100])[,-index]
