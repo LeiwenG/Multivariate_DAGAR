@@ -1,4 +1,10 @@
-#Import simalution results
+
+library(plyr)
+library(ggplot2)
+
+#Import simalution results for a certain correlation scenario
+#Take low correlation senario as an example: we import the simulation data for low correlation senario in result_data.R
+scenario = "low"
 source("result_data.R")
 summary.function = function(x){
   m = mean(x)
@@ -36,7 +42,11 @@ for (t in 1:85){
 
 se_W_dagarm = sqrt(sum(se_matrix_dagar)/(85*n*q)/(85*n*q-1))
 
+# Take low correlation senario as an example
 eta_truem = c(0.05, 0.1)
+# medium correlation: eta_truem = c(0.5, 0.3)
+# high correlation: eta_truem = c(2.5, 0.5)
+
 rho_truem = c(0.2, 0.8)
 tau_truem = c(0.25, 0.25)
 vare_truem = c(0.4, 0.4)
@@ -154,7 +164,7 @@ plot_pc = data.frame(cbind(states,pcover, model))
 colnames(plot_pc) = c("location", "value", "model")
 plot_pc$value = as.numeric(as.character(plot_pc$value))
 
-pdf("cp_cor_low.pdf", height = 5, width = 8)
+pdf(paste("cp_cor_", scenario, ".pdf", sep = ""), height = 5, width = 8)
 ggplot(plot_pc, aes(x=location, y=value, group=model)) +
   #geom_line(aes(color=model, linetype = model))+
   coord_cartesian(ylim = c(0,100))+
@@ -184,12 +194,65 @@ Model = c(rep("MDAGAR",85), rep("GMCAR",85))
 df = data.frame(cbind(value, Model))
 df$value = as.numeric(as.character(df$value))
 
-library(plyr)
 mu <- ddply(df, "Model", summarise, grp.mean=mean(value))
 
-pdf("D_low.pdf", height = 5, width = 8)
+pdf(paste("D_", scenario, ".pdf", sep = ""), height = 5, width = 8)
 ggplot(df, aes(x=value,color=Model, fill=Model)) +
   geom_density(alpha=0.4) + xlab("D") +
   geom_vline(data=mu, aes(xintercept=grp.mean, color=Model),
              linetype="dashed")
 dev.off()
+
+# WAIC plot
+WAIC_plot <- data.frame(cbind(c(WAIC_d, WAIC_c), c(rep("MDAGAR", length(WAIC_d)),
+                                                   rep("GMCAR", length(WAIC_c)))))
+WAIC_plot$X1 <- as.numeric(as.character(WAIC_plot$X1))
+colnames(WAIC_plot) <- c("WAIC", "Model")
+
+mu <- ddply(WAIC_plot, "Model", summarise, grp.mean=mean(WAIC))
+
+pdf(paste("WAIC_", scenario, ".pdf", sep = ""), height = 5, width = 8)
+ggplot(WAIC_plot, aes(x=WAIC, color=Model,fill=Model)) +
+  geom_density(alpha=0.4) + xlab("WAIC")+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Model),
+             linetype="dashed")
+dev.off()
+
+
+# 2-dimensional histogram for estimates of W against true values
+whatd = cbind(w1hatd, w2hatd)
+Wtrued = cbind(W1d, W2d)
+Wtruedvec = as.vector(t(Wtrued))
+wvecd = as.vector(t(whatd))
+
+Wd_tab = data.frame(cbind(Wtruedvec, wvecd))
+pdf(paste("W_dagar_", scenario, ".pdf", sep = ""), height = 5, width = 8)
+ggplot(Wd_tab, aes(x=Wtruedvec, y=wvecd) ) +
+  geom_bin2d(bins = 70) +
+  scale_fill_continuous(type = "viridis") +
+  geom_abline(slope=1, intercept = 0) +
+  xlab("W") + ylab("Estimate of W")+
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14),
+        legend.title=element_text(size=12),
+        legend.text=element_text(size=12))
+dev.off()
+
+whatc = cbind(w1hatc, w2hatc)
+Wtruec = cbind(W1c, W2c)
+Wtruecvec = as.vector(t(Wtruec))
+wvecc = as.vector(t(whatc))
+
+Wc_tab = data.frame(cbind(Wtruecvec, wvecc))
+pdf(paste("W_car_", scenario, ".pdf", sep = ""), height = 5, width = 8)
+ggplot(Wc_tab, aes(x=Wtruecvec, y=wvecc) ) +
+  geom_bin2d(bins = 70) +
+  scale_fill_continuous(type = "viridis") +
+  geom_abline(slope=1, intercept = 0) +
+  xlab("W") + ylab("Estimate of W")+
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14),
+        legend.title=element_text(size=12),
+        legend.text=element_text(size=12))
+dev.off()
+
