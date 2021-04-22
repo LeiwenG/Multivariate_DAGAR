@@ -382,8 +382,8 @@ for(seed in 1:100){
   mu_rep1 = rowMeans(Y_rep1)
   mu_rep2 = rowMeans(Y_rep2)
   
-  var_rep1 = rowVar(Y_rep1)
-  var_rep2 = rowVar(Y_rep2)
+  var_rep1 = rowVars(Y_rep1)
+  var_rep2 = rowVars(Y_rep2)
   
   G.latent1 = sum((Y1 - mu_rep1)^2)
   P.latent1 = sum(var_rep1)
