@@ -4,7 +4,7 @@
 #delete the 15 datasets with abnormal results for GMCAR
 index = c(2,6,8,17,19,25,26,29,37,44,54,73,76,89,91)
 
-setwd("/Users/Leiwen/Box Sync/Research/simulation/GP/DAGARl_sw")
+setwd("simulation/GP/DAGARl_sw")
 
 Dd = cbind(readRDS("D2_usa1.rds")[1:50], readRDS("D2_usa2.rds")[51:100])[-index]
 
@@ -48,7 +48,7 @@ se_W_dagarm = sqrt(sum(se_matrix_dagar)/(85*n*q)/(85*n*q-1))
 
 
 
-setwd("/Users/Leiwen/Box Sync/Research/simulation/GP/DAGARl_ne")
+setwd("simulation/GP/DAGARl_ne")
 
 D_ne = cbind(readRDS("D2_usa1.rds")[1:50], readRDS("D2_usa2.rds")[51:100])[-index]
 
@@ -85,7 +85,7 @@ for (t in 1:85){
 
 se_W_dagarm_ne = sqrt(sum(se_matrix_dagar_ne)/(85*n*q)/(85*n*q-1))
 
-setwd("/Users/Leiwen/Box Sync/Research/simulation/GP/DAGARl_nw")
+setwd("simulation/GP/DAGARl_nw")
 
 D_nw = cbind(readRDS("D2_usa1.rds")[1:50], readRDS("D2_usa2.rds")[51:100])[-index]
 
@@ -122,7 +122,7 @@ for (t in 1:85){
 
 se_W_dagarm_nw = sqrt(sum(se_matrix_dagar_nw)/(85*n*q)/(85*n*q-1))
 
-setwd("/Users/Leiwen/Box Sync/Research/simulation/GP/DAGARl_se")
+setwd("simulation/GP/DAGARl_se")
 
 D_se = cbind(readRDS("D2_usa1.rds")[1:50], readRDS("D2_usa2.rds")[51:100])[-index]
 
@@ -170,7 +170,7 @@ df$value = as.numeric(as.character(df$value))
 library(plyr)
 mu <- ddply(df, "Model", summarise, grp.mean=mean(value))
 
-pdf("/Users/Leiwen/Box Sync/Research/data_new/D_perm.pdf", height = 5, width = 8)
+pdf("D_perm.pdf", height = 5, width = 8)
 ggplot(df, aes(x=value,color=Model, fill=Model)) +
   geom_density(alpha=0.4) + xlab("Score D") +
   geom_vline(data=mu, aes(xintercept=grp.mean, color=Model),
@@ -189,7 +189,7 @@ df$value = as.numeric(as.character(df$value))
 
 mu <- ddply(df, "Model", summarise, grp.mean=mean(value))
 
-pdf("/Users/Leiwen/Box Sync/Research/data_new/WAIC_perm.pdf", height = 5, width = 8)
+pdf("WAIC_perm.pdf", height = 5, width = 8)
 ggplot(df, aes(x=value,color=Model, fill=Model)) +
   geom_density(alpha=0.4) + xlab("WAIC") +
   geom_vline(data=mu, aes(xintercept=grp.mean, color=Model),
@@ -216,7 +216,7 @@ df$value = as.numeric(as.character(df$value))
 
 mu <- ddply(df, "Model", summarise, grp.mean=mean(value))
 
-pdf("/Users/Leiwen/Box Sync/Research/data_new/KL_perm.pdf", height = 5, width = 8)
+pdf("KL_perm.pdf", height = 5, width = 8)
 ggplot(df, aes(x=value,color=Model, fill=Model)) +
   geom_density(alpha=0.4) + xlab("D_KL") +
   geom_vline(data=mu, aes(xintercept=grp.mean, color=Model),
