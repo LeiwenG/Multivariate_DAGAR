@@ -30,6 +30,8 @@ library(mcmcse)
 library(LaplacesDemon)
 library(gtools)
 library(ggmap)
+library(Hmisc)
+library(PerformanceAnalytics)
 setwd("Multivariate_DAGAR/RDA")
 
 #Import covariates
@@ -55,6 +57,14 @@ rate_larynx = rate_larynx[order(extract_numeric(rate_larynx$State_county)),]
 
 rate_colrect = rate_CA[rate_CA$Site_recode_ICD_O_3_WHO_2008=="Colon and Rectum",]
 rate_colrect = rate_colrect[order(extract_numeric(rate_colrect$State_county)),]
+
+# Exploratory analysis for Pearson correlation
+cancer_rates = cbind(rate_lung$Age_Adjusted_Rate, rate_esophagus$Age_Adjusted_Rate, rate_larynx$Age_Adjusted_Rate, rate_colrect$Age_Adjusted_Rate)
+colnames(cancer_rates) = c("Lung and Bronchus", "Esophageal", "Larynx", "Colon and Rectum")
+cor_matrix <- rcorr(cancer_rates)
+cor_matrix$r
+cor_matrix$P
+chart.Correlation(cancer_rates, histogram=TRUE, pch=19)
 
 #County information
 county.ID <- sapply(strsplit(ca.county$names, ","), function(x) x[2])
@@ -191,6 +201,51 @@ ca.coord = coordinates(ca.poly)
 ca.latrange=round(quantile(ca.coord[,2],c(0.25,0.75)))
 ca.albersproj=mapproject(ca.coord[,1],ca.coord[,2],projection = "albers",param=ca.latrange)
 
+## Calculate Moran's I for each cancer using albers projection
+projmat=cbind(ca.albersproj$x,ca.albersproj$y)
+dmat=as.matrix(dist(projmat))
+
+moranI <- function(y, A){
+  n = length(y)
+  nom_sum = 0
+  den_sum = 0
+  for(i in 1:n){
+    den_sum = den_sum + (y[i]-mean(y))^2
+    for(j in 1:n){
+      nom_sum = nom_sum + A[i,j]*(y[i]-mean(y))*(y[j]-mean(y))
+    }
+  }
+  return(n*nom_sum/sum(A)/den_sum)
+}
+
+lung_moran = c()
+esophagus_moran = c()
+larynx_moran = c()
+colrect_moran = c()
+for(lag in 1:11){
+  A_1 <- as.matrix((dmat <= 0.01*lag & dmat > 0.01*(lag-1))*1)
+  diag(A_1) = 0
+  lung_moran[lag] <- as.numeric(moranI(rate_lung$Age_Adjusted_Rate, A_1))
+  esophagus_moran[lag] <- as.numeric(moranI(rate_esophagus$Age_Adjusted_Rate, A_1))
+  larynx_moran[lag] <- as.numeric(moranI(rate_larynx$Age_Adjusted_Rate, A_1))
+  colrect_moran[lag] <- as.numeric(moranI(rate_colrect$Age_Adjusted_Rate, A_1))
+}
+
+moran_value = c(lung_moran, esophagus_moran, larynx_moran, colrect_moran)
+cancer = c(rep("Lung", 11), rep("Esophageal", 11), rep("Larynx", 11), rep("Colorectum", 11))
+df = data.frame(cancer)
+df$moran_value = moran_value
+df$r = rep(1:11, 4)
+df$cancer = factor(df$cancer, levels = c("Lung", "Esophageal", "Larynx", "Colorectum"))
+pdf("MoranI.pdf", height = 5, width = 8)
+ggplot(df, aes(r, moran_value)) + geom_point() +
+  ylab("Moran's I") + facet_wrap(~cancer) + theme_bw() +
+  scale_x_continuous(breaks = 1:11) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+dev.off()
+
+
+## Specify the order
 perm=order(ca.albersproj$x-ca.albersproj$y)
 colnames(Adj)[perm]
 
